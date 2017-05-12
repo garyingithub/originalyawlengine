@@ -1,0 +1,2 @@
+04-04 15:25:46 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLException: No data is available [2000-176]
