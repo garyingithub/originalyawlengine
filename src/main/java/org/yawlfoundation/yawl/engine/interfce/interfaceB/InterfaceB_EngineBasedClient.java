@@ -58,10 +58,20 @@ import static org.yawlfoundation.yawl.engine.announcement.YEngineEvent.*;
 public class InterfaceB_EngineBasedClient extends Interface_Client implements ObserverGateway {
 
     protected static final Logger _logger = LogManager.getLogger(InterfaceB_EngineBasedClient.class);
-    private static final ExecutorService _executor =
-            Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+   // private static final ExecutorService _executor =
+    //        Executors.newCachedThreadPool();
 
 
+    class FakeExecutor{
+
+        public void execute(Runnable runnable){
+            runnable.run();
+
+        }
+
+    }
+
+    private FakeExecutor _executor=new FakeExecutor();
     /**
      * Indicates which protocol this shim services.
      * @return the scheme
@@ -158,10 +168,10 @@ public class InterfaceB_EngineBasedClient extends Interface_Client implements Ob
                                              YWorkItem workItem,
                                              YWorkItemStatus oldStatus,
                                              YWorkItemStatus newStatus) {
-        for (YAWLServiceReference service : services) {
-            _executor.execute(new Handler(service, workItem, oldStatus.toString(),
-                                            newStatus.toString(), ITEM_STATUS));
-        }
+       // for (YAWLServiceReference service : services) {
+      //      _executor.execute(new Handler(service, workItem, oldStatus.toString(),
+      //                                      newStatus.toString(), ITEM_STATUS));
+      //  }
     }
 
 
@@ -177,10 +187,10 @@ public class InterfaceB_EngineBasedClient extends Interface_Client implements Ob
     public void announceCaseStarted(Set<YAWLServiceReference> services,
                                     YSpecificationID specID, YIdentifier caseID,
                                     String launchingService, boolean delayed) {
-        for (YAWLServiceReference service : services) {
-            _executor.execute(
-                    new Handler(service, specID, caseID, launchingService, delayed, CASE_START));
-        }
+       // for (YAWLServiceReference service : services) {
+       //     _executor.execute(
+       //             new Handler(service, specID, caseID, launchingService, delayed, CASE_START));
+       // }
     }
 
     /**
@@ -249,7 +259,7 @@ public class InterfaceB_EngineBasedClient extends Interface_Client implements Ob
      */
     public void shutdown() {
         HttpURLValidator.cancelAll();
-        _executor.shutdownNow();
+        //_executor.shutdownNow();
 
     	// Nothing else to do - Interface B Clients handle shutdown within their own servlet.
     }
@@ -394,10 +404,12 @@ public class InterfaceB_EngineBasedClient extends Interface_Client implements Ob
                         break;
                     }
                 }
-                executePost(_yawlService.getURI(), paramsMap);
+                long start=System.currentTimeMillis();
+                asyncExecutePost(_yawlService.getURI(), paramsMap);
+                System.out.println("use time "+String.valueOf(System.currentTimeMillis()-start));
             }
             catch (ConnectException ce) {
-                System.out.println(ce.getMessage());
+                //System.out.println(ce.getMessage());
                 if (_command == ITEM_ADD) {
                     redirectWorkItem(true);
                 }

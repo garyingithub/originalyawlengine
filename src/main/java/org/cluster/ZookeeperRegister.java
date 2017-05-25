@@ -1,14 +1,15 @@
-package edu.sysu;
+package org.cluster;
 
 import org.apache.zookeeper.*;
-import org.apache.zookeeper.data.ACL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.yawlfoundation.yawl.engine.time.YTimer;
 
+import javax.annotation.PostConstruct;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static org.apache.zookeeper.CreateMode.EPHEMERAL_SEQUENTIAL;
 
@@ -27,23 +28,25 @@ public class ZookeeperRegister {
     }
 
     private final Logger logger= LoggerFactory.getLogger(ZookeeperRegister.class);
+
+
+    @Value("${zk.address}")
     private String ZK_ADDRESS;
+
+    @Value("${engine.address}")
     private String ENGINE_ADDRESS;
     private ZooKeeper zk;
     public static String engineId;
 
-    public ZookeeperRegister() {
+    @PostConstruct
+    public void init() {
 
-        this.ZK_ADDRESS=System.getenv("ZK_ADDRESS");
+
         if(this.ZK_ADDRESS==null){
-            this.ZK_ADDRESS="192.168.239.128:2181";
+            this.ZK_ADDRESS="stack:2184";
 
         }
-        logger.info(String.format("ZK_ADDRESS="+this.ZK_ADDRESS));
 
-
-
-        this.ENGINE_ADDRESS=System.getenv("ENGINE_ADDRESS");
         if(this.ENGINE_ADDRESS==null){
             this.ENGINE_ADDRESS="192.168.239.1:8089";
         }
@@ -57,7 +60,8 @@ public class ZookeeperRegister {
 
             zk=new ZooKeeper(this.ZK_ADDRESS, 30000, new StubWatcher());
             if(zk.exists("/engine",new StubWatcher())==null){
-                logger.info(zk.create("/engine","".getBytes(),ZooDefs.Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT ));
+                String temp=zk.create("/engine","".getBytes(),ZooDefs.Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT );
+                logger.info(temp);
             }
             String result=zk.create("/engine/",this.ENGINE_ADDRESS.getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, EPHEMERAL_SEQUENTIAL);
             logger.info(result);
@@ -67,5 +71,25 @@ public class ZookeeperRegister {
             throw new RuntimeException(e);
         }
 
+        while (true){
+            try {
+                TimeUnit.SECONDS.sleep(5);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+    }
+
+    public static String getEngineId(){
+        int count=0;
+        do{
+            String engineId= ZookeeperRegister.engineId;
+        }while (engineId==null&&count++<50);
+        if(engineId==null){
+            engineId="0";
+//            throw new RuntimeException("Can't initialize engineId");
+        }
+        return engineId;
     }
 }

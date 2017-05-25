@@ -18,6 +18,19 @@
 
 package org.yawlfoundation.yawl.engine.interfce;
 
+import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
+import org.apache.http.impl.nio.client.HttpAsyncClients;
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.protocol.BasicHttpContext;
+import org.apache.http.protocol.HttpContext;
+import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,6 +42,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Future;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -63,6 +77,13 @@ public class Interface_Client {
 
         return send(urlStr, paramsMap, true);
     }
+
+    protected void asyncExecutePost(String urlStr, Map<String, String> paramsMap)
+            throws IOException {
+
+        asyncSend(urlStr, paramsMap, true);
+    }
+
 
     public String send(String urlStr,String data) throws IOException {
         HttpURLConnection connection=initPostConnection(urlStr);
@@ -198,6 +219,70 @@ public class Interface_Client {
     private final Logger logger= LoggerFactory.getLogger(Interface_Client.class);
     // PRIVATE METHODS //
 
+
+    class RequestForwader {
+
+        final CloseableHttpClient client = HttpClients.createDefault();
+        public String forwardRequest(String uri, List<NameValuePair> parameterMap)
+                throws IOException {
+
+
+            String result;
+            if (!uri.startsWith("http")) {
+                uri = "http://" + uri;
+            }
+            HttpPost httpPost = new HttpPost(uri);
+
+            UrlEncodedFormEntity entity = new UrlEncodedFormEntity(parameterMap, "UTF-8");
+
+            httpPost.setEntity(entity);
+            HttpContext httpContext = new BasicHttpContext();
+            CloseableHttpResponse response;
+            response = client.execute(httpPost, httpContext);
+            result = EntityUtils.toString(response.getEntity());
+
+            return result;
+        }
+
+        CloseableHttpAsyncClient httpAsyncClient= HttpAsyncClients.createDefault();
+
+        public RequestForwader(){
+            httpAsyncClient.start();
+        }
+
+
+
+
+        public void asyncForwardRequest(String uri, List<NameValuePair> parameterMap){
+
+
+
+            try {
+
+                if (!uri.startsWith("http")) {
+                    uri = "http://" + uri;
+                }
+                final HttpPost httpPost = new HttpPost(uri);
+
+                UrlEncodedFormEntity entity = new UrlEncodedFormEntity(parameterMap, "UTF-8");
+
+                httpPost.setEntity(entity);
+
+                httpAsyncClient.execute(httpPost, null);
+
+
+            } catch (UnsupportedEncodingException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    private final RequestForwader client=new RequestForwader();
+
+
+
+// PRIVATE METHODS //
+
     /**
      * Sends data to the specified url via a HTTP POST, and returns the reply
      * @param urlStr the url to connect to
@@ -208,6 +293,7 @@ public class Interface_Client {
      */
     private String send(String urlStr, Map<String, String> paramsMap, boolean post)
             throws IOException {
+
         String p = "http://(.*):";
         Pattern pattern=Pattern.compile(p);
 
@@ -228,9 +314,58 @@ public class Interface_Client {
 
             urlStr=urlStr.replace(host,a);
         }
-        logger.info(urlStr);
-        return send(initPostConnection(urlStr), paramsMap, post);
+        List<NameValuePair> list=new ArrayList<NameValuePair>();
+        for(String key:paramsMap.keySet()){
+
+            BasicNameValuePair pair=new BasicNameValuePair(key,paramsMap.get(key));
+            list.add(pair);
+        }
+
+        String result=client.forwardRequest(urlStr,list);
+        if(post){
+            return stripOuterElement(result);
+        }
+        else {
+            return result;
+        }
+
     }
+
+    private void asyncSend(String urlStr, Map<String, String> paramsMap, boolean post)
+            throws IOException {
+
+        String p = "http://(.*):";
+        Pattern pattern=Pattern.compile(p);
+
+        Matcher matcher=pattern.matcher(urlStr);
+
+
+        String host=null;
+        while (matcher.find()){
+            host=matcher.group(1);
+        }
+
+        if(!Character.isDigit(host.charAt(0))) {
+            InetAddress address = InetAddress.getByName(host);
+
+            String a = address.toString();
+
+            a = a.substring(a.indexOf('/' )+ 1);
+
+            urlStr=urlStr.replace(host,a);
+        }
+        List<NameValuePair> list=new ArrayList<NameValuePair>();
+        for(String key:paramsMap.keySet()){
+
+            BasicNameValuePair pair=new BasicNameValuePair(key,paramsMap.get(key));
+            list.add(pair);
+        }
+
+        client.asyncForwardRequest(urlStr,list);
+
+
+    }
+
 
 
      /**

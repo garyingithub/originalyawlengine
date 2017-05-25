@@ -52,6 +52,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -64,14 +65,15 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * @author Michael Adams (refactored for v2.0, 06/2008; 12/2008)
  *
  */
-@Component
 public class InterfaceB_EngineBasedServer extends YHttpServlet {
 
     private EngineGateway _engine;
 
-    @Autowired
-    @Qualifier("kafkaGaugeWriter")
+
     private GaugeWriter writer;
+    public void setWriter(GaugeWriter writer){
+        this.writer=writer;
+    }
 
     @Override
     public void init() throws ServletException {
@@ -241,6 +243,20 @@ public class InterfaceB_EngineBasedServer extends YHttpServlet {
     //###############################################################################
 
 
+    private void logTaskAction(String caseId,String taskName, String taskId,boolean isStart){
+
+      //  StringBuilder keyBuilder=new StringBuilder();
+    //    keyBuilder.append("task");
+     //   keyBuilder.append(":");
+     //   keyBuilder.append("task_name.");
+     //   keyBuilder.append(taskName);
+     //   keyBuilder.append(" task_id.");
+     ///   keyBuilder.append(taskId);
+    //    writer.set(new Metric<Number>(keyBuilder.toString(),isStart?0:1));
+
+
+    }
+
 
     private String processPostQuery(HttpServletRequest request) {
         StringBuilder msg = new StringBuilder();
@@ -274,17 +290,17 @@ public class InterfaceB_EngineBasedServer extends YHttpServlet {
                 else if (action.equals("checkout")) {
                     YWorkItem workItem=_engine.getWorkItem(workItemID);
 
-                    writer.set(new Metric<Number>("task"+workItem.getCaseID().getRootAncestor().getId()+":"+workItem.getTaskID(),
-                            1));
+                    logTaskAction(workItem.getCaseID().toString(),workItem.getTask().getName(),workItem.getTaskID(),true);
                     msg.append(_engine.startWorkItem(workItemID, sessionHandle));
+
                 }
                 else if (action.equals("checkin")) {
                     String data = request.getParameter("data");
                     String logPredicate = request.getParameter("logPredicate");
                     YWorkItem workItem=_engine.getWorkItem(workItemID);
 
-                    writer.set(new Metric<Number>("task"+workItem.getCaseID().getRootAncestor().getId()+":"+workItem.getTaskID(),
-                            0));
+
+                    logTaskAction(workItem.getCaseID().toString(),workItem.getTask().getName(),workItem.getTaskID(),false);
                     msg.append(_engine.completeWorkItem(workItemID, data, logPredicate, false,
                             sessionHandle));
                 }
