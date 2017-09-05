@@ -28,7 +28,7 @@ import java.util.Map;
 /**
  * Created by gary on 18/05/2017.
  */
-
+@Component
 public class InfluxDBGaugeWriter implements GaugeWriter {
 
 
@@ -88,8 +88,6 @@ public class InfluxDBGaugeWriter implements GaugeWriter {
 
             response=client.execute(httpPost,httpContext);
             //logger.info(response.toString());
-        } catch (ClientProtocolException e) {
-            throw new RuntimeException(e);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -125,7 +123,9 @@ public class InfluxDBGaugeWriter implements GaugeWriter {
 
         }else {
             tags.put("name",key);
+
         }
+        tags.put("engineId",ZookeeperRegister.engineId);
 
 
 

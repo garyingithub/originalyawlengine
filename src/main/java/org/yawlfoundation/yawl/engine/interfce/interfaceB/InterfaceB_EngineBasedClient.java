@@ -20,9 +20,12 @@ package org.yawlfoundation.yawl.engine.interfce.interfaceB;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.cluster.OriginalYawlEngineApplication;
+import org.cluster.ZookeeperRegister;
 import org.jdom2.Document;
 import org.jdom2.Element;
 import org.jdom2.JDOMException;
+import org.springframework.boot.actuate.metrics.InfluxDBGaugeWriter;
 import org.yawlfoundation.yawl.elements.YAWLServiceReference;
 import org.yawlfoundation.yawl.elements.YTask;
 import org.yawlfoundation.yawl.elements.data.YParameter;
@@ -37,10 +40,7 @@ import org.yawlfoundation.yawl.util.JDOMUtil;
 
 import java.io.IOException;
 import java.net.ConnectException;
-import java.text.MessageFormat;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import static org.yawlfoundation.yawl.engine.announcement.YEngineEvent.*;
 
@@ -54,7 +54,6 @@ import static org.yawlfoundation.yawl.engine.announcement.YEngineEvent.*;
  *
  * @author Michael Adams (refactored for v2.0, 06/2008 - 12/2008)
  */
-
 public class InterfaceB_EngineBasedClient extends Interface_Client implements ObserverGateway {
 
     protected static final Logger _logger = LogManager.getLogger(InterfaceB_EngineBasedClient.class);
@@ -62,8 +61,8 @@ public class InterfaceB_EngineBasedClient extends Interface_Client implements Ob
     //        Executors.newCachedThreadPool();
 
 
+    private InfluxDBGaugeWriter writer=OriginalYawlEngineApplication.writer;
     class FakeExecutor{
-
         public void execute(Runnable runnable){
             runnable.run();
 
@@ -376,6 +375,11 @@ public class InterfaceB_EngineBasedClient extends Interface_Client implements Ob
             Map<String, String> paramsMap = prepareParamMap(_command.label(), null);
             if (_workItem != null) paramsMap.put("workItem", _workItem.toXML());
             if (_caseID != null) paramsMap.put("caseID", _caseID.toString());
+
+            paramsMap.put("engineAddress", OriginalYawlEngineApplication.engineAddress);
+
+            paramsMap.put("engineId", ZookeeperRegister.engineId);
+
             try {
                 switch (_command) {
                     case ITEM_STATUS: {
@@ -404,9 +408,10 @@ public class InterfaceB_EngineBasedClient extends Interface_Client implements Ob
                         break;
                     }
                 }
-                long start=System.currentTimeMillis();
+            //    long start=System.currentTimeMillis();
                 asyncExecutePost(_yawlService.getURI(), paramsMap);
-                System.out.println("use time "+String.valueOf(System.currentTimeMillis()-start));
+                ;
+             //   System.out.println("use time "+String.valueOf(System.currentTimeMillis()-start));
             }
             catch (ConnectException ce) {
                 //System.out.println(ce.getMessage());

@@ -18,6 +18,7 @@
 
 package org.yawlfoundation.yawl.engine.interfce.interfaceB;
 
+import org.cluster.OriginalYawlEngineApplication;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.actuate.metrics.GaugeService;
@@ -209,7 +210,6 @@ public class InterfaceB_EngineBasedServer extends YHttpServlet {
 
     public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
 
-        //Long start=System.currentTimeMillis();
         OutputStreamWriter outputWriter = ServletUtils.prepareResponse(response);
         StringBuilder output = new StringBuilder();
         output.append("<response>");
@@ -229,8 +229,6 @@ public class InterfaceB_EngineBasedServer extends YHttpServlet {
         outputWriter.flush();
         outputWriter.close();
 
-
-        //this.writer.set(new Metric<Number>("engine.response.time",System.currentTimeMillis()-start));
 
 
 
@@ -259,6 +257,7 @@ public class InterfaceB_EngineBasedServer extends YHttpServlet {
 
 
     private String processPostQuery(HttpServletRequest request) {
+        Long start=System.currentTimeMillis();
         StringBuilder msg = new StringBuilder();
         String sessionHandle = request.getParameter("sessionHandle");
         String action = request.getParameter("action");
@@ -308,7 +307,7 @@ public class InterfaceB_EngineBasedServer extends YHttpServlet {
                     msg.append(_engine.rejectAnnouncedEnabledTask(workItemID, sessionHandle));
                 }
                 else if (action.equals("launchCase")) {
-                    Long startTime=System.currentTimeMillis();
+
                     YSpecificationID specID =
                             new YSpecificationID(specIdentifier, specVersion, specURI);
                     URI completionObserver = getCompletionObserver(request);
@@ -318,7 +317,9 @@ public class InterfaceB_EngineBasedServer extends YHttpServlet {
                     String startStr = request.getParameter("start");
                     String waitStr = request.getParameter("wait");
                     String caseIDStr=request.getParameter("caseID");
-
+                    if(caseIDStr==null){
+                        caseIDStr=request.getParameter("caseid");
+                    }
                     if(caseIDStr!=null){
                         msg.append(_engine.launchCase(specID, caseParams
                                 ,completionObserver, caseIDStr,logDataStr, sessionHandle));
@@ -344,7 +345,7 @@ public class InterfaceB_EngineBasedServer extends YHttpServlet {
                                     completionObserver, logDataStr, sessionHandle));
                     }
 
-                      }
+                }
                 else if (action.equals("cancelCase")) {
                     String caseID = request.getParameter("caseID");
                     msg.append(_engine.cancelCase(caseID, sessionHandle));
@@ -487,6 +488,9 @@ public class InterfaceB_EngineBasedServer extends YHttpServlet {
             _log.error("Remote Exception in Interface B with action: " + action, e);
         }
         _log.debug("InterfaceB_EngineBasedServer::doPost() result = {}", msg);
+        if(OriginalYawlEngineApplication.writer!=null)
+            OriginalYawlEngineApplication.writer.set(new Metric<Number>("B_response_time",System.currentTimeMillis()-start));
+
         return msg.toString();
     }
 

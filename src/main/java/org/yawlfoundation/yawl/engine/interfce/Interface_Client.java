@@ -23,6 +23,7 @@ import org.apache.http.NameValuePair;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.concurrent.FutureCallback;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
@@ -31,8 +32,10 @@ import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.util.EntityUtils;
+import org.cluster.OriginalYawlEngineApplication;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.actuate.metrics.Metric;
 
 import java.io.*;
 import java.net.HttpURLConnection;
@@ -42,7 +45,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Future;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -252,6 +254,27 @@ public class Interface_Client {
 
 
 
+        class FutureCallbackWithStartTime implements FutureCallback<HttpResponse>{
+
+            private long start;
+            public FutureCallbackWithStartTime(long start){
+                this.start=start;
+            }
+            @Override
+            public void completed(HttpResponse httpResponse) {
+                OriginalYawlEngineApplication.writer.set(new Metric<Number>("time_span",System.currentTimeMillis()-start));
+            }
+
+            @Override
+            public void failed(Exception e) {
+
+            }
+
+            @Override
+            public void cancelled() {
+
+            }
+        }
 
         public void asyncForwardRequest(String uri, List<NameValuePair> parameterMap){
 
@@ -268,7 +291,8 @@ public class Interface_Client {
 
                 httpPost.setEntity(entity);
 
-                httpAsyncClient.execute(httpPost, null);
+
+                httpAsyncClient.execute(httpPost, new FutureCallbackWithStartTime(System.currentTimeMillis()));
 
 
             } catch (UnsupportedEncodingException e) {

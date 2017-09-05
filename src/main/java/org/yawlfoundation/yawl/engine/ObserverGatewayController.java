@@ -117,8 +117,8 @@ public class ObserverGatewayController {
      */
     protected void announce(final YAnnouncement announcement) {
         if (announcement == null) return;
-        _executor.execute(new Runnable() {
-            public void run() {
+        //_executor.execute(new Runnable() {
+        //    public void run() {
                 String scheme = announcement.getScheme();
                 for (ObserverGateway gateway : getGatewaysForScheme(scheme)) {
                     switch (announcement.getEvent()) {
@@ -127,8 +127,8 @@ public class ObserverGatewayController {
                         case TIMER_EXPIRED: gateway.announceTimerExpiry(announcement); break;
                     }
                 }
-            }
-        });
+          //  }
+       // });
     }
 
 

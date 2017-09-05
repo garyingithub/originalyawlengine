@@ -24,6 +24,10 @@
     <dependencies>
 
         <dependency>
+            <groupId>org.jolokia</groupId>
+            <artifactId>jolokia-core</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
             <version>4.5.3</version>
@@ -105,16 +109,9 @@
             <artifactId>hibernate-core</artifactId>
             <version>5.2.1.Final</version>
         </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter</artifactId>
-        </dependency>
 
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
+
+
 
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
@@ -182,6 +179,7 @@
                 <configuration>
                     <imageName>garycoding/springboot-originalyawlengine</imageName>
                     <dockerDirectory>src/main/docker</dockerDirectory>
+                    <dockerHost>http://222.200.180.59:2375</dockerHost>
                     <resources>
                         <resource>
                             <directory>${project.build.directory}</directory>

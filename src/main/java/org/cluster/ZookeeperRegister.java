@@ -68,7 +68,7 @@ public class ZookeeperRegister {
             engineId=result.substring(8);
         } catch (KeeperException | InterruptedException | IOException e) {
             logger.info(e.getMessage());
-            throw new RuntimeException(e);
+//            throw new RuntimeException(e);
         }
 
         while (true){
